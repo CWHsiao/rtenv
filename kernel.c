@@ -304,20 +304,11 @@ void queue_str_task(const char *str, int delay)
 	}
 }
 
-void queue_str_task1()
+void serial_my_shell_task()
 {
-	queue_str_task("Hello 1\n", 200);
-}
-
-void queue_str_task2()
-{
-	queue_str_task("Hello 2\n", 50);
-}
-
-void serial_readwrite_task()
-{
+	int MAX_SHELL_COMMAND = 1024;
 	int fdout, fdin;
-	char str[100];
+	char str[MAX_SHELL_COMMAND];
 	char ch;
 	int curr_char;
 	int done;
@@ -325,11 +316,10 @@ void serial_readwrite_task()
 	fdout = mq_open("/tmp/mqueue/out", 0);
 	fdin = open("/dev/tty0/in", 0);
 
-	/* Prepare the response message to be queued. */
-	memcpy(str, "Got:", 4);
-
 	while (1) {
-		curr_char = 4;
+		memcpy(str, "$\0", 2);
+		write(fdout, str, 2);
+		curr_char = 0;
 		done = 0;
 		do {
 			/* Receive a byte from the RS232 port (this call will
@@ -339,22 +329,21 @@ void serial_readwrite_task()
 			/* If the byte is an end-of-line type character, then
 			 * finish the string and inidcate we are done.
 			 */
-			if (curr_char >= 98 || (ch == '\r') || (ch == '\n')) {
-				str[curr_char] = '\n';
-				str[curr_char+1] = '\0';
+			if (curr_char >= MAX_SHELL_COMMAND-1 || (ch == '\r') || (ch == '\n')) {
+				//str[curr_char] = '\n';
+				str[curr_char] = '\0';
 				done = -1;
 				/* Otherwise, add the character to the
 				 * response string. */
 			}
 			else {
 				str[curr_char++] = ch;
+				write(fdout, &ch, 1);
 			}
 		} while (!done);
 
-		/* Once we are done building the response string, queue the
-		 * response to be sent to the RS232 port.
-		 */
-		write(fdout, str, curr_char+1+1);
+		memcpy(str, "\n", 1);
+		write(fdout, str, 1);
 	}
 }
 
@@ -366,9 +355,7 @@ void first()
 	if (!fork()) setpriority(0, 0), serialout(USART2, USART2_IRQn);
 	if (!fork()) setpriority(0, 0), serialin(USART2, USART2_IRQn);
 	if (!fork()) rs232_xmit_msg_task();
-	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), queue_str_task1();
-	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), queue_str_task2();
-	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), serial_readwrite_task();
+	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), serial_my_shell_task();
 
 	setpriority(0, PRIORITY_LIMIT);
 
