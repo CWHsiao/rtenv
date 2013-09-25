@@ -342,8 +342,8 @@ void serial_my_shell_task()
 			}
 		} while (!done);
 
-		memcpy(str, "\n", 1);
-		write(fdout, str, 1);
+		memcpy(str, "\n\r", 2);
+		write(fdout, str, 2);
 	}
 }
 
