@@ -72,6 +72,9 @@ void puts(char *s)
 
 #define O_CREAT 4
 
+#define TERMINAL_PREFIX ("$\0")
+#define NEXT_COMMAND_LINE ("\n\r\0")
+
 /* Stack struct of user thread, see "Exception entry and return" */
 struct user_thread_stack {
 	unsigned int r4;
@@ -304,7 +307,7 @@ void queue_str_task(const char *str, int delay)
 	}
 }
 
-void serial_my_shell_task()
+void terminal_task()
 {
 	int MAX_SHELL_COMMAND = 1024;
 	int fdout, fdin;
@@ -317,8 +320,7 @@ void serial_my_shell_task()
 	fdin = open("/dev/tty0/in", 0);
 
 	while (1) {
-		memcpy(str, "$\0", 2);
-		write(fdout, str, 2);
+		write(fdout, TERMINAL_PREFIX, strlen(TERMINAL_PREFIX)+1);
 		curr_char = 0;
 		done = 0;
 		do {
@@ -342,8 +344,7 @@ void serial_my_shell_task()
 			}
 		} while (!done);
 
-		memcpy(str, "\n\r", 2);
-		write(fdout, str, 2);
+		write(fdout, NEXT_COMMAND_LINE, strlen(NEXT_COMMAND_LINE)+1);
 	}
 }
 
@@ -355,7 +356,7 @@ void first()
 	if (!fork()) setpriority(0, 0), serialout(USART2, USART2_IRQn);
 	if (!fork()) setpriority(0, 0), serialin(USART2, USART2_IRQn);
 	if (!fork()) rs232_xmit_msg_task();
-	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), serial_my_shell_task();
+	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), terminal_task();
 
 	setpriority(0, PRIORITY_LIMIT);
 
