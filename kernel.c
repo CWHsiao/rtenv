@@ -307,6 +307,43 @@ void queue_str_task(const char *str, int delay)
 	}
 }
 
+void proc_command(char *str){
+	int fdout = mq_open("/tmp/mqueue/out", 0);
+	char* argv[100];
+	int argc=0;
+	argv[0] = str;
+
+	/*
+	* split str by space (won't creat new string)
+	* str: "how do you do?\0"
+	*
+	* result:
+	* argc: 3 (4-1)
+	* argv[0]: "how\0"
+	* argv[1]: "do\0"
+	* argv[2]: "you\0"
+	* argv[3]: "do?\0"
+	*/
+	while (*str) {
+		if(*str == ' '){
+			*str = '\0';
+			argv[++argc] = str+1;
+		}
+		str++;
+	}
+	// Try to print last argv
+	//write(fdout, argv[argc], strlen(argv[argc])+1);
+	//write(fdout, NEXT_COMMAND_LINE, strlen(NEXT_COMMAND_LINE)+1);
+
+	if (strcmp( argv[0] , "echo") == 0){
+
+	} else if (strcmp( argv[0] , "hello") == 0){
+
+	} else if (strcmp( argv[0] , "ps") == 0){
+
+	}
+}
+
 void terminal_task()
 {
 	int MAX_SHELL_COMMAND = 1024;
@@ -345,6 +382,9 @@ void terminal_task()
 		} while (!done);
 
 		write(fdout, NEXT_COMMAND_LINE, strlen(NEXT_COMMAND_LINE)+1);
+		proc_command(&str);
+		//write(fdout, str, strlen(str)+1);
+		//write(fdout, NEXT_COMMAND_LINE, strlen(NEXT_COMMAND_LINE)+1);
 	}
 }
 
