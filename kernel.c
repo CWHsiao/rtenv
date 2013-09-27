@@ -309,6 +309,7 @@ void queue_str_task(const char *str, int delay)
 
 void proc_command(char *str){
 	int fdout = mq_open("/tmp/mqueue/out", 0);
+	char *EMSG_TOO_MANY_ARG = ": Too many arguments ...\n\r";
 	char* argv[100];
 	int argc=0;
 	argv[0] = str;
@@ -338,7 +339,13 @@ void proc_command(char *str){
 	if (strcmp( argv[0] , "echo") == 0){
 
 	} else if (strcmp( argv[0] , "hello") == 0){
-
+		if(argc == 0){
+			char *string = "Hello, World!\n\r";
+			write(fdout, string, strlen(string)+1);
+		} else {
+			write(fdout, argv[0], strlen(argv[0])+1);
+			write(fdout, EMSG_TOO_MANY_ARG, strlen(EMSG_TOO_MANY_ARG)+1);
+		}
 	} else if (strcmp( argv[0] , "ps") == 0){
 
 	}
